@@ -1,13 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { generateCoverLetter } from '../services/analysis.js';
+import { getSavedResume } from '../services/storage.js';
 import styles from './CoverLetter.module.css';
 
 export default function CoverLetter({ onToast }) {
   const [resume, setResume] = useState('');
-  const [jd, setJd] = useState('');
+  const [jd, setJd]         = useState('');
   const [loading, setLoading] = useState(false);
-  const [letter, setLetter] = useState('');
-  const [error, setError] = useState('');
+  const [letter, setLetter]   = useState('');
+  const [error, setError]     = useState('');
+
+  // Load saved resume on mount
+  useEffect(() => {
+    const saved = getSavedResume();
+    if (saved) setResume(saved);
+  }, []);
 
   async function handleGenerate() {
     if (!resume.trim() || !jd.trim()) {
@@ -36,10 +43,13 @@ export default function CoverLetter({ onToast }) {
     <div>
       <div className="grid-2">
         <div className="card">
-          <div className="card-label">Your Resume</div>
+          <div className="card-label">
+            Your Resume
+            {resume && <span className={styles.resumeNote}> (loaded from saved)</span>}
+          </div>
           <textarea
             className="textarea"
-            placeholder="Paste your full resume here..."
+            placeholder="Paste your resume here..."
             value={resume}
             onChange={(e) => setResume(e.target.value)}
           />

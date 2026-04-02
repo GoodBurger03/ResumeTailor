@@ -32,3 +32,11 @@
   font-family: var(--font-mono);
   color: var(--text);
 }
+
+.resumeNote {
+  font-size: 11px;
+  color: var(--success);
+  font-weight: 400;
+  letter-spacing: 0;
+  text-transform: none;
+}

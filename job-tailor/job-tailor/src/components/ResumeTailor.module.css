@@ -101,3 +101,79 @@
   color: var(--muted);
   margin-bottom: 4px;
 }
+
+.exportRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 16px;
+  padding: 14px 0;
+  border-top: 1px solid var(--border);
+}
+
+.exportLabel {
+  font-size: 13px;
+  color: var(--muted);
+  font-weight: 600;
+  margin-right: 4px;
+}
+
+.prefillBanner {
+  background: rgba(232,255,71,0.08);
+  border: 1px solid rgba(232,255,71,0.25);
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 13px;
+  color: var(--accent);
+  margin-bottom: 16px;
+}
+
+.cardHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.cardHeader .card-label { margin-bottom: 0; }
+
+.resumeActions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.savedIndicator {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--success);
+  letter-spacing: 0.04em;
+}
+
+.saveResumeBtn {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  background: rgba(232,255,71,0.1);
+  border: 1px solid rgba(232,255,71,0.3);
+  color: var(--accent);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.saveResumeBtn:hover { background: rgba(232,255,71,0.2); }
+
+.clearResumeBtn {
+  font-family: var(--font-ui);
+  font-size: 12px;
+  font-weight: 600;
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+  border-radius: var(--radius-sm);
+  padding: 4px 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.clearResumeBtn:hover { border-color: var(--danger); color: var(--danger); }

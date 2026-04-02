@@ -1,5 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { tailorResume } from '../services/analysis.js';
+import { exportToPDF, exportToDOCX } from '../services/export.js';
+import { getSavedResume, saveResume, clearResume } from '../services/storage.js';
 import ScoreRing from './ScoreRing.jsx';
 import styles from './ResumeTailor.module.css';
 
@@ -35,12 +37,54 @@ function BulletItem({ text, onCopy }) {
   );
 }
 
-export default function ResumeTailor({ onToast }) {
-  const [resume, setResume] = useState('');
-  const [jd, setJd] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [result, setResult] = useState(null);
-  const [error, setError] = useState('');
+export default function ResumeTailor({ onToast, prefillJD }) {
+  const [resume, setResume]       = useState('');
+  const [jd, setJd]               = useState('');
+  const [loading, setLoading]     = useState(false);
+  const [result, setResult]       = useState(null);
+  const [error, setError]         = useState('');
+  const [exporting, setExporting] = useState('');
+  const [resumeSaved, setResumeSaved] = useState(false);
+
+  // Load saved resume on mount
+  useEffect(() => {
+    const saved = getSavedResume();
+    if (saved) {
+      setResume(saved);
+      setResumeSaved(true);
+    }
+  }, []);
+
+  // Prefill JD from Job Board
+  useEffect(() => {
+    if (!prefillJD) return;
+    const text = [
+      prefillJD.title   && `Role: ${prefillJD.title}`,
+      prefillJD.company && `Company: ${prefillJD.company}`,
+      prefillJD.desc,
+    ].filter(Boolean).join('\n\n');
+    setJd(text);
+    setResult(null);
+  }, [prefillJD]);
+
+  function handleResumeChange(val) {
+    setResume(val);
+    setResumeSaved(false);
+  }
+
+  function handleSaveResume() {
+    if (!resume.trim()) return;
+    saveResume(resume);
+    setResumeSaved(true);
+    onToast('Resume saved!');
+  }
+
+  function handleClearResume() {
+    clearResume();
+    setResume('');
+    setResumeSaved(false);
+    onToast('Resume cleared.');
+  }
 
   async function handleAnalyze() {
     if (!resume.trim() || !jd.trim()) {
@@ -65,17 +109,58 @@ export default function ResumeTailor({ onToast }) {
     onToast('Copied!');
   }
 
+  async function handleExportPDF() {
+    setExporting('pdf');
+    try {
+      await exportToPDF({ name: 'Joshua Bartels', bullets: result.tailoredBullets });
+      onToast('PDF downloaded!');
+    } catch { onToast('Export failed.'); }
+    finally { setExporting(''); }
+  }
+
+  async function handleExportDOCX() {
+    setExporting('docx');
+    try {
+      await exportToDOCX({ name: 'Joshua Bartels', bullets: result.tailoredBullets });
+      onToast('.docx downloaded!');
+    } catch { onToast('Export failed.'); }
+    finally { setExporting(''); }
+  }
+
   return (
     <div>
-      {/* Inputs */}
+      {prefillJD && (
+        <div className={styles.prefillBanner}>
+          ✦ Job loaded: <strong>{prefillJD.title}</strong>
+          {prefillJD.company ? ` at ${prefillJD.company}` : ''} — hit Analyze to tailor your resume.
+        </div>
+      )}
+
       <div className="grid-2">
         <div className="card">
-          <div className="card-label">Your Resume</div>
+          <div className={styles.cardHeader}>
+            <div className="card-label">Your Resume</div>
+            <div className={styles.resumeActions}>
+              {resumeSaved && (
+                <span className={styles.savedIndicator}>✓ Saved</span>
+              )}
+              {resume.trim() && !resumeSaved && (
+                <button className={styles.saveResumeBtn} onClick={handleSaveResume}>
+                  💾 Save resume
+                </button>
+              )}
+              {resumeSaved && (
+                <button className={styles.clearResumeBtn} onClick={handleClearResume}>
+                  Clear
+                </button>
+              )}
+            </div>
+          </div>
           <textarea
             className="textarea"
-            placeholder="Paste your full resume here..."
+            placeholder="Paste your resume here — it will be saved for next time."
             value={resume}
-            onChange={(e) => setResume(e.target.value)}
+            onChange={(e) => handleResumeChange(e.target.value)}
           />
         </div>
         <div className="card">
@@ -98,7 +183,6 @@ export default function ResumeTailor({ onToast }) {
         </button>
       </div>
 
-      {/* Skeleton */}
       {loading && (
         <div className={styles.skeletons}>
           <div className="skeleton" style={{ width: '55%', height: 20 }} />
@@ -108,7 +192,6 @@ export default function ResumeTailor({ onToast }) {
         </div>
       )}
 
-      {/* Results */}
       {result && (
         <div className={styles.results}>
           <div className={styles.resultsHeader}>
@@ -118,34 +201,24 @@ export default function ResumeTailor({ onToast }) {
             </span>
           </div>
 
-          <ScoreRing
-            score={result.score}
-            title={result.scoreTitle}
-            summary={result.scoreSummary}
-          />
+          <ScoreRing score={result.score} title={result.scoreTitle} summary={result.scoreSummary} />
 
-          {/* Skills */}
           <div className="section-title">Keyword & Skill Analysis</div>
           <div className="grid-2">
             <div className="card">
               <div className="card-label" style={{ color: 'var(--success)' }}>✓ Strong Matches</div>
               <div className={styles.skillGrid}>
-                {result.strongSkills.map((s) => (
-                  <SkillPill key={s} label={s} type="strong" />
-                ))}
+                {result.strongSkills.map((s) => <SkillPill key={s} label={s} type="strong" />)}
               </div>
             </div>
             <div className="card">
               <div className="card-label" style={{ color: 'var(--danger)' }}>✗ Missing / Gaps</div>
               <div className={styles.skillGrid}>
-                {result.missingSkills.map((s) => (
-                  <SkillPill key={s} label={s} type="missing" />
-                ))}
+                {result.missingSkills.map((s) => <SkillPill key={s} label={s} type="missing" />)}
               </div>
             </div>
           </div>
 
-          {/* Tailored bullets */}
           <div className="section-title">Tailored Resume Bullets</div>
           <p className={styles.hint}>Click any bullet to copy it.</p>
           <ul className={styles.bulletList}>
@@ -154,7 +227,16 @@ export default function ResumeTailor({ onToast }) {
             ))}
           </ul>
 
-          {/* Tips */}
+          <div className={styles.exportRow}>
+            <span className={styles.exportLabel}>Export bullets:</span>
+            <button className="btn-secondary" onClick={handleExportPDF}  disabled={!!exporting}>
+              {exporting === 'pdf'  ? 'Exporting…' : '↓ PDF'}
+            </button>
+            <button className="btn-secondary" onClick={handleExportDOCX} disabled={!!exporting}>
+              {exporting === 'docx' ? 'Exporting…' : '↓ .docx'}
+            </button>
+          </div>
+
           <div className="section-title">Recommendations</div>
           <ul className={styles.bulletList}>
             {result.tips.map((t, i) => (
