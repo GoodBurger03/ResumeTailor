@@ -37,7 +37,9 @@ cd job-tailor/job-tailor
 npm install
 ```
 
-### 2. Add your API keys
+### 2. Configure API keys
+
+**For security, API keys are entered through the app's Settings UI (not in .env files).**
 
 ```bash
 cp .env.example .env
@@ -47,22 +49,19 @@ Open `.env` and set:
 
 ```
 VITE_ANTHROPIC_API_KEY=your_key_here
-VITE_ADZUNA_APP_ID=your_adzuna_app_id
-VITE_ADZUNA_APP_KEY=your_adzuna_app_key
-VITE_MUSE_API_KEY=your_muse_key
-VITE_USAJOBS_API_KEY=your_usajobs_key
 VITE_STORAGE_ENCRYPTION_SECRET=a_big_secret_string_for_local_storage_encryption
 ```
 
-> Optional: set `VITE_STORAGE_ENCRYPTION_SECRET` to obfuscate stored API keys in localStorage (recommended for shared/dev machines).
+**About VITE_STORAGE_ENCRYPTION_SECRET:**
+This optional secret enables encryption of API keys stored in your browser's localStorage. When set, API keys entered through the Settings UI are obfuscated using XOR cipher + Base64 encoding. This protects against casual inspection via browser developer tools. Generate a long, random string (32+ characters) for best security.
 
-**API Keys:**
+**API Keys (enter these in the ⚙ Settings UI):**
 - **Anthropic** (Required): [console.anthropic.com](https://console.anthropic.com) — Powers resume tailoring and cover letter generation
 - **Adzuna** (Optional): [developer.adzuna.com](https://developer.adzuna.com) — Broad US job listings (250 req/month free)
 - **The Muse** (Optional): [themuse.com/developers](https://www.themuse.com/developers/api/v2) — Tech and startup jobs (free)
 - **USAJobs** (Optional): [developer.usajobs.gov](https://developer.usajobs.gov) — Federal government jobs (free, ~1 day approval)
 
-> **Note:** This app calls APIs directly from the browser. Keys are stored locally in your browser. For production deployment, proxy API calls through a backend server to keep keys private.
+> **Security Note:** API keys entered through the ⚙ Settings UI are encrypted in browser localStorage. The `.env` file is only used for development fallbacks and should not contain production API keys.
 
 ### 3. Run
 
@@ -71,6 +70,13 @@ npm run dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173).
+
+### 4. Configure API keys in the app
+
+1. Click the ⚙ Settings tab
+2. Enter your API keys in the secure input fields
+3. Click "Save Settings"
+4. Keys are encrypted and stored locally in your browser
 
 ---
 
