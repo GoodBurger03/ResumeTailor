@@ -51,7 +51,10 @@ VITE_ADZUNA_APP_ID=your_adzuna_app_id
 VITE_ADZUNA_APP_KEY=your_adzuna_app_key
 VITE_MUSE_API_KEY=your_muse_key
 VITE_USAJOBS_API_KEY=your_usajobs_key
+VITE_STORAGE_ENCRYPTION_SECRET=a_big_secret_string_for_local_storage_encryption
 ```
+
+> Optional: set `VITE_STORAGE_ENCRYPTION_SECRET` to obfuscate stored API keys in localStorage (recommended for shared/dev machines).
 
 **API Keys:**
 - **Anthropic** (Required): [console.anthropic.com](https://console.anthropic.com) — Powers resume tailoring and cover letter generation

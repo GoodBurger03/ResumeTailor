@@ -15,13 +15,42 @@ const KEYS = {
   USAJOBS_EMAIL:    'jobtailor_key_usajobs_email',
 };
 
+const STORAGE_SECRET = import.meta.env.VITE_STORAGE_ENCRYPTION_SECRET || '';
+
+function xorCipher(value, key) {
+  if (!key) return value;
+  const keyLen = key.length;
+  return Array.from(value).map((char, idx) => {
+    const c = char.charCodeAt(0) ^ key.charCodeAt(idx % keyLen);
+    return String.fromCharCode(c);
+  }).join('');
+}
+
+function encode(value) {
+  if (!value) return value;
+  if (!STORAGE_SECRET) return value;
+  return btoa(xorCipher(value, STORAGE_SECRET));
+}
+
+function decode(value) {
+  if (!value) return value;
+  if (!STORAGE_SECRET) return value;
+  try {
+    return xorCipher(atob(value), STORAGE_SECRET);
+  } catch {
+    return '';
+  }
+}
+
 function get(storageKey, envKey) {
-  return localStorage.getItem(storageKey) || import.meta.env[envKey] || '';
+  const stored = localStorage.getItem(storageKey);
+  if (stored) return decode(stored);
+  return import.meta.env[envKey] || '';
 }
 
 function set(storageKey, value) {
   if (value && value.trim()) {
-    localStorage.setItem(storageKey, value.trim());
+    localStorage.setItem(storageKey, encode(value.trim()));
   } else {
     localStorage.removeItem(storageKey);
   }
