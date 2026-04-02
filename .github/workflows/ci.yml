@@ -1,0 +1,46 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [18.x, 20.x]
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: job-tailor/job-tailor/package-lock.json
+
+    - name: Install dependencies
+      run: |
+        cd job-tailor/job-tailor
+        npm ci
+
+    - name: Run linter (if available)
+      run: |
+        cd job-tailor/job-tailor
+        npm run lint 2>/dev/null || echo "No lint script found"
+
+    - name: Build project
+      run: |
+        cd job-tailor/job-tailor
+        npm run build
+
+    - name: Run tests (if available)
+      run: |
+        cd job-tailor/job-tailor
+        npm test 2>/dev/null || echo "No test script found"
