@@ -32,9 +32,9 @@ AI-powered job search platform with resume tailoring, cover letter generation, j
 ### 1. Clone and install
 
 ```bash
-git clone https://github.com/GoodBurger03/job-tailor.git
-cd job-tailor/job-tailor
-npm install
+git clone https://github.com/GoodBurger03/ResumeTailor.git
+cd ResumeTailor/job-tailor/job-tailor
+npm install --legacy-peer-deps
 ```
 
 ### 2. Configure API keys
