@@ -23,6 +23,21 @@ export const DEFAULT_QUERIES = [
   'Solutions Engineer',
   'Support Engineer',
   'Technical Program Manager',
+  'DevOps Engineer',
+  'Backend Engineer',
+  'Full Stack Engineer',
+  'API Engineer',
+  'Customer Success Engineer',
+  'Sales Engineer',
+  'Data Engineer',
+  'Cloud Engineer',
+  'Systems Engineer',
+  'Project Manager',
+  'QA Engineer',
+  'Technical Project Manager',
+  'Data Analyst',
+  'Business Analyst',
+  'Product Manager',
 ];
 
 function stripHtml(str = '') {
@@ -38,13 +53,22 @@ async function fetchAdzuna(query, location) {
 
   const params = new URLSearchParams({
     app_id: appId, app_key: appKey,
-    results_per_page: 10, what: query, sort_by: 'date', content_type: 'application/json',
+    results_per_page: 10, what: query, sort_by: 'date',
   });
   if (location?.trim()) params.set('where', location.trim());
 
+  // Use CORS proxy for browser compatibility
+  const corsProxy = 'https://cors-anywhere.herokuapp.com/';
+  const adzunaUrl = `${ADZUNA_BASE}?${params}`;
+  const url = corsProxy + adzunaUrl;
+
   try {
-    const res  = await fetch(`${ADZUNA_BASE}?${params}`, { signal: AbortSignal.timeout(8000) });
+    // Add delay to avoid rate limiting
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    const res = await fetch(url, { signal: AbortSignal.timeout(15000) });
     if (!res.ok) return [];
+
     const data = await res.json();
     return (data.results || []).map((j) => ({
       id: String(j.id || crypto.randomUUID()), title: j.title,
@@ -67,6 +91,21 @@ const MUSE_CATEGORY_MAP = {
   'Solutions Engineer':        'Software Engineer',
   'Support Engineer':          'IT',
   'Technical Program Manager': 'Project Management',
+  'DevOps Engineer':           'Software Engineer',
+  'Backend Engineer':          'Software Engineer',
+  'Full Stack Engineer':       'Software Engineer',
+  'API Engineer':              'Software Engineer',
+  'Customer Success Engineer': 'Customer Service',
+  'Sales Engineer':            'Sales',
+  'Data Engineer':             'Data',
+  'Cloud Engineer':            'Software Engineer',
+  'Systems Engineer':          'Software Engineer',
+  'Project Manager':           'Project Management',
+  'QA Engineer':               'Software Engineer',
+  'Technical Project Manager': 'Project Management',
+  'Data Analyst':              'Data',
+  'Business Analyst':          'Business Intelligence',
+  'Product Manager':           'Product Management',
 };
 
 async function fetchMuse(query) {
@@ -78,7 +117,7 @@ async function fetchMuse(query) {
     const res  = await fetch(`${MUSE_BASE}?${params}`, { signal: AbortSignal.timeout(8000) });
     if (!res.ok) return [];
     const data = await res.json();
-    return (data.results || []).slice(0, 10).map((j) => ({
+    return (data.results || []).slice(0, 25).map((j) => ({
       id: String(j.id || crypto.randomUUID()), title: j.name,
       company: j.company?.name || 'Unknown',
       location: j.locations?.map((l) => l.name).join(', ') || 'US',
@@ -96,7 +135,7 @@ async function fetchUSAJobs(query, location) {
   const userAgent = getUSAJobsEmail();
   if (!apiKey || !userAgent) return [];
 
-  const params = new URLSearchParams({ Keyword: query, ResultsPerPage: 10, SortField: 'OpenDate', SortDirection: 'Desc' });
+  const params = new URLSearchParams({ Keyword: query, ResultsPerPage: 25, SortField: 'OpenDate', SortDirection: 'Desc' });
   if (location?.trim() && location.toLowerCase() !== 'remote') params.set('LocationName', location.trim());
 
   try {
@@ -131,6 +170,21 @@ const REMOTEOK_TAGS = {
   'Solutions Engineer':        ['solutions','engineer','devrel'],
   'Support Engineer':          ['support','customer','success'],
   'Technical Program Manager': ['manager','program','product'],
+  'DevOps Engineer':           ['devops','infrastructure','ci','cd'],
+  'Backend Engineer':          ['backend','server','database'],
+  'Full Stack Engineer':       ['fullstack','frontend','backend'],
+  'API Engineer':              ['api','integration','backend'],
+  'Customer Success Engineer': ['customer','success','support'],
+  'Sales Engineer':            ['sales','solutions','technical'],
+  'Data Engineer':             ['data','etl','pipeline','warehouse'],
+  'Cloud Engineer':            ['cloud','aws','azure','gcp'],
+  'Systems Engineer':          ['systems','infrastructure','networking'],
+  'Project Manager':           ['project','manager','agile','scrum'],
+  'QA Engineer':               ['qa','testing','quality','automation'],
+  'Technical Project Manager': ['technical','project','manager','engineering'],
+  'Data Analyst':              ['data','analyst','analytics','sql'],
+  'Business Analyst':          ['business','analyst','requirements','stakeholder'],
+  'Product Manager':           ['product','manager','roadmap','strategy'],
 };
 
 let roCache = null;
@@ -166,9 +220,9 @@ export async function fetchJobs(queries = DEFAULT_QUERIES, location = '') {
   const [adzunaAll, museAll, usaAll, roRaw] = await Promise.all([
     Promise.allSettled(queries.slice(0,3).map((q) => fetchAdzuna(q, location)))
       .then((rs) => rs.flatMap((r) => r.status === 'fulfilled' ? r.value : [])),
-    Promise.allSettled([...new Set(queries.map((q) => MUSE_CATEGORY_MAP[q]||'Software Engineer'))].slice(0,2).map(fetchMuse))
+    Promise.allSettled([...new Set(queries.map((q) => MUSE_CATEGORY_MAP[q]||'Software Engineer'))].slice(0,3).map(fetchMuse))
       .then((rs) => rs.flatMap((r) => r.status === 'fulfilled' ? r.value : [])),
-    Promise.allSettled(queries.slice(0,2).map((q) => fetchUSAJobs(q, location)))
+    Promise.allSettled(queries.slice(0,3).map((q) => fetchUSAJobs(q, location)))
       .then((rs) => rs.flatMap((r) => r.status === 'fulfilled' ? r.value : [])),
     fetchRemoteOK(),
   ]);
