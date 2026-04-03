@@ -2,6 +2,9 @@
   "name": "job-tailor",
   "version": "1.0.0",
   "description": "AI-powered resume tailoring and cover letter generator",
+  "engines": {
+    "node": ">=20.19.0 || >=22.12.0"
+  },
   "type": "module",
   "scripts": {
     "dev": "vite",
