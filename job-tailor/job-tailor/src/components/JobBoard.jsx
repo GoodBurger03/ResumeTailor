@@ -1,24 +1,8 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { fetchJobs, getActiveSources } from '../services/jobFeed.js';
 import { getAdzunaId, getMuseKey, getUSAJobsKey } from '../services/settings.js';
 import { addApplication } from '../services/storage.js';
 import styles from './JobBoard.module.css';
-
-// Fetch a broad set of queries to get a wide pool of jobs
-const BROAD_QUERIES = [
-  'Software Engineer',
-  'Integration Engineer',
-  'Technical Sales Engineer',
-  'Solutions Engineer',
-  'Support Engineer',
-  'Technical Program Manager',
-  'DevOps Engineer',
-  'Backend Engineer',
-  'Full Stack Engineer',
-  'API Engineer',
-  'Customer Success Engineer',
-  'Sales Engineer',
-];
 
 const SOURCE_COLORS = {
   Adzuna:     { bg: '#e8ff47', color: '#000' },
@@ -27,14 +11,24 @@ const SOURCE_COLORS = {
   RemoteOK:   { bg: '#4ade80', color: '#000' },
 };
 
-const JOB_TYPES = ['All Types', 'Full-time', 'Part-time', 'Contract', 'Remote'];
-
-const DATE_RANGES = [
-  { label: 'Any time',    days: null },
-  { label: 'Past 24h',   days: 1    },
-  { label: 'Past week',  days: 7    },
-  { label: 'Past month', days: 30   },
+const JOB_TYPES   = ['All Types', 'Full-time', 'Part-time', 'Contract', 'Remote'];
+const SORT_OPTIONS = [
+  { value: 'date',    label: 'Newest first' },
+  { value: 'company', label: 'Company A–Z' },
+  { value: 'salary',  label: 'Salary (high–low)' },
 ];
+const DATE_RANGES = [
+  { label: 'Any time',   days: null },
+  { label: 'Past 24h',  days: 1    },
+  { label: 'Past week', days: 7    },
+  { label: 'Past month',days: 30   },
+];
+
+function parseSalaryMin(salaryStr) {
+  if (!salaryStr) return 0;
+  const match = salaryStr.match(/\$(\d+)k/);
+  return match ? parseInt(match[1]) * 1000 : 0;
+}
 
 function JobCard({ job, onSave, onTailor }) {
   const [saved, setSaved] = useState(false);
@@ -77,28 +71,39 @@ function JobCard({ job, onSave, onTailor }) {
 }
 
 export default function JobBoard({ onTailorJob, onToast }) {
-  const [allJobs, setAllJobs]     = useState([]);   // full unfiltered set from API
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState('');
-  const activeSources             = getActiveSources();
+  const [allJobs, setAllJobs]       = useState([]);
+  const [loading, setLoading]       = useState(false);
+  const [error, setError]           = useState('');
+  const [activeSources, setActiveSources] = useState(['RemoteOK']);
+  const [missingKeys, setMissingKeys]     = useState([]);
 
-  // ── Filter state ──────────────────────────────────────────────────────────
-  const [keyword, setKeyword]     = useState('');
-  const [location, setLocation]   = useState('');
-  const [source, setSource]       = useState('All');
-  const [jobType, setJobType]     = useState('All Types');
-  const [dateRange, setDateRange] = useState(DATE_RANGES[0]);
+  // Filter state
+  const [keyword, setKeyword]       = useState('');
+  const [location, setLocation]     = useState('');
+  const [source, setSource]         = useState('All');
+  const [jobType, setJobType]       = useState('All Types');
+  const [dateRange, setDateRange]   = useState(DATE_RANGES[0]);
   const [salaryOnly, setSalaryOnly] = useState(false);
-  const [sortBy, setSortBy]       = useState('date'); // 'date' | 'company'
+  const [sortBy, setSortBy]         = useState('date');
 
   const locationRef = useRef(location);
   useEffect(() => { locationRef.current = location; }, [location]);
 
-  async function load() {
+  // Load active sources and missing keys on mount
+  useEffect(() => {
+    setActiveSources(getActiveSources());
+    setMissingKeys([
+      !getAdzunaId()  && { name: 'Adzuna',   url: 'https://developer.adzuna.com' },
+      !getMuseKey()   && { name: 'The Muse', url: 'https://www.themuse.com/developers/api/v2' },
+      !getUSAJobsKey()&& { name: 'USAJobs',  url: 'https://developer.usajobs.gov' },
+    ].filter(Boolean));
+  }, []);
+
+  const load = useCallback(async () => {
     setLoading(true);
     setError('');
     try {
-      const results = await fetchJobs(BROAD_QUERIES, locationRef.current);
+      const results = await fetchJobs(locationRef.current);
       setAllJobs(results);
       if (!results.length) setError('No results found. Try a different location or leave blank for nationwide.');
     } catch {
@@ -106,72 +111,52 @@ export default function JobBoard({ onTailorJob, onToast }) {
     } finally {
       setLoading(false);
     }
-  }
+  }, []);
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => { load(); }, [load]);
 
   function clearFilters() {
-    setKeyword('');
-    setSource('All');
-    setJobType('All Types');
-    setDateRange(DATE_RANGES[0]);
-    setSalaryOnly(false);
-    setSortBy('date');
+    setKeyword(''); setSource('All'); setJobType('All Types');
+    setDateRange(DATE_RANGES[0]); setSalaryOnly(false); setSortBy('date');
   }
 
-  // ── Client-side filtering ─────────────────────────────────────────────────
+  // ── Client-side filtering & sorting ──────────────────────────────────────
   const visible = allJobs
     .filter((j) => {
       const text = `${j.title} ${j.company} ${j.location} ${j.desc}`.toLowerCase();
 
-      // Keyword — supports multiple space-separated terms (AND logic)
+      // Keyword — supports comma-separated OR logic, space = AND
       if (keyword.trim()) {
-        const terms = keyword.trim().toLowerCase().split(/\s+/);
-        if (!terms.every((t) => text.includes(t))) return false;
+        const orTerms = keyword.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+        const matchesAny = orTerms.some((orTerm) => {
+          const andTerms = orTerm.split(/\s+/).filter(Boolean);
+          return andTerms.every((t) => text.includes(t));
+        });
+        if (!matchesAny) return false;
       }
 
-      // Source
       if (source !== 'All' && j.source !== source) return false;
-
-      // Job type — match against title/desc since APIs don't always return type
-      if (jobType !== 'All Types') {
-        const typeText = jobType.toLowerCase();
-        if (!text.includes(typeText)) return false;
-      }
-
-      // Date range
+      if (jobType !== 'All Types' && !text.includes(jobType.toLowerCase())) return false;
       if (dateRange.days !== null && j.pubDate) {
-        const cutoff = Date.now() - dateRange.days * 86400000;
-        if (new Date(j.pubDate).getTime() < cutoff) return false;
+        if (new Date(j.pubDate).getTime() < Date.now() - dateRange.days * 86400000) return false;
       }
-
-      // Salary only
       if (salaryOnly && !j.salary) return false;
-
       return true;
     })
     .sort((a, b) => {
       if (sortBy === 'company') return (a.company || '').localeCompare(b.company || '');
+      if (sortBy === 'salary')  return parseSalaryMin(b.salary) - parseSalaryMin(a.salary);
       return new Date(b.pubDate || 0) - new Date(a.pubDate || 0);
     });
 
-  const filterOptions = ['All', ...activeSources];
-  const activeFilterCount = [
-    keyword, source !== 'All', jobType !== 'All Types',
-    dateRange.days !== null, salaryOnly,
-  ].filter(Boolean).length;
-
-  const missingKeys = [
-    !getAdzunaId()  && { name: 'Adzuna',   url: 'https://developer.adzuna.com' },
-    !getMuseKey()   && { name: 'The Muse', url: 'https://www.themuse.com/developers/api/v2' },
-    !getUSAJobsKey()&& { name: 'USAJobs',  url: 'https://developer.usajobs.gov' },
-  ].filter(Boolean);
+  const filterOptions      = ['All', ...activeSources];
+  const activeFilterCount  = [keyword, source !== 'All', jobType !== 'All Types', dateRange.days !== null, salaryOnly].filter(Boolean).length;
 
   return (
     <div>
       {missingKeys.length > 0 && (
         <div className={styles.tipBanner}>
-          ⚡ Add free API keys in <strong>⚙ Settings</strong> to unlock:{' '}
+          ⚡ Add free API keys in <strong>⚙ Settings</strong> to unlock more sources:{' '}
           {missingKeys.map((k, i) => (
             <span key={k.name}>
               <a href={k.url} target="_blank" rel="noopener noreferrer">{k.name}</a>
@@ -181,19 +166,17 @@ export default function JobBoard({ onTailorJob, onToast }) {
         </div>
       )}
 
-      {/* ── Search + Location + Fetch ── */}
+      {/* Search + Location + Fetch */}
       <div className={styles.searchRow}>
         <div className={styles.searchWrap}>
           <span className={styles.searchIcon}>⌕</span>
           <input
             className={styles.searchInput}
-            placeholder="Keywords (e.g. Java Kubernetes remote)…"
+            placeholder="Keywords: Java Kubernetes  |  comma for OR: engineer, manager"
             value={keyword}
             onChange={(e) => setKeyword(e.target.value)}
           />
-          {keyword && (
-            <button className={styles.clearInput} onClick={() => setKeyword('')}>✕</button>
-          )}
+          {keyword && <button className={styles.clearInput} onClick={() => setKeyword('')}>✕</button>}
         </div>
         <input
           className={styles.locationInput}
@@ -208,9 +191,9 @@ export default function JobBoard({ onTailorJob, onToast }) {
         </button>
       </div>
 
-      {/* ── Filter bar ── */}
+      {/* Filter bar */}
       <div className={styles.filterBar}>
-        {/* Source pills */}
+        {/* Source */}
         <div className={styles.filterGroup}>
           {filterOptions.map((s) => (
             <button
@@ -240,37 +223,19 @@ export default function JobBoard({ onTailorJob, onToast }) {
 
         <div className={styles.filterDivider} />
 
-        {/* Job type */}
-        <select
-          className={styles.selectFilter}
-          value={jobType}
-          onChange={(e) => setJobType(e.target.value)}
-        >
+        <select className={styles.selectFilter} value={jobType} onChange={(e) => setJobType(e.target.value)}>
           {JOB_TYPES.map((t) => <option key={t}>{t}</option>)}
         </select>
 
-        {/* Sort */}
-        <select
-          className={styles.selectFilter}
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="date">Sort: Newest</option>
-          <option value="company">Sort: Company A–Z</option>
+        <select className={styles.selectFilter} value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+          {SORT_OPTIONS.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
         </select>
 
-        {/* Salary toggle */}
         <label className={styles.toggleLabel}>
-          <input
-            type="checkbox"
-            className={styles.toggle}
-            checked={salaryOnly}
-            onChange={(e) => setSalaryOnly(e.target.checked)}
-          />
+          <input type="checkbox" className={styles.toggle} checked={salaryOnly} onChange={(e) => setSalaryOnly(e.target.checked)} />
           Salary listed
         </label>
 
-        {/* Clear filters */}
         {activeFilterCount > 0 && (
           <button className={styles.clearFilters} onClick={clearFilters}>
             Clear filters ({activeFilterCount})
@@ -280,13 +245,18 @@ export default function JobBoard({ onTailorJob, onToast }) {
         <span className={styles.count}>{visible.length} of {allJobs.length} jobs</span>
       </div>
 
+      {/* Keyword hint */}
+      {!keyword && (
+        <p className={styles.keywordHint}>
+          💡 Tip: Use spaces for AND (e.g. <em>java remote</em>), commas for OR (e.g. <em>engineer, manager</em>)
+        </p>
+      )}
+
       {error && <p className={styles.error}>{error}</p>}
 
       {loading && (
         <div className={styles.skeletons}>
-          {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="skeleton" style={{ height: 140 }} />
-          ))}
+          {Array.from({ length: 6 }).map((_, i) => <div key={i} className="skeleton" style={{ height: 140 }} />)}
         </div>
       )}
 
@@ -305,7 +275,7 @@ export default function JobBoard({ onTailorJob, onToast }) {
 
       {!loading && !error && allJobs.length > 0 && visible.length === 0 && (
         <div className={styles.noResults}>
-          <p>No jobs match your filters.</p>
+          <p>No jobs match your current filters.</p>
           <button className="btn-secondary" onClick={clearFilters}>Clear all filters</button>
         </div>
       )}

@@ -1,16 +1,16 @@
 import { useState, useEffect } from 'react';
-import { generateCoverLetter } from '../services/analysis.js';
+import { generateCoverLetter, COVER_LETTER_TONES } from '../services/analysis.js';
 import { getSavedResume } from '../services/storage.js';
 import styles from './CoverLetter.module.css';
 
 export default function CoverLetter({ onToast }) {
-  const [resume, setResume] = useState('');
-  const [jd, setJd]         = useState('');
+  const [resume, setResume]   = useState('');
+  const [jd, setJd]           = useState('');
+  const [tone, setTone]       = useState('conversational');
   const [loading, setLoading] = useState(false);
   const [letter, setLetter]   = useState('');
   const [error, setError]     = useState('');
 
-  // Load saved resume on mount
   useEffect(() => {
     const saved = getSavedResume();
     if (saved) setResume(saved);
@@ -25,7 +25,7 @@ export default function CoverLetter({ onToast }) {
     setLoading(true);
     setLetter('');
     try {
-      const text = await generateCoverLetter(resume, jd);
+      const text = await generateCoverLetter(resume, jd, tone);
       setLetter(text);
     } catch (e) {
       setError(e.message || 'Something went wrong. Please try again.');
@@ -39,8 +39,29 @@ export default function CoverLetter({ onToast }) {
     onToast('Copied!');
   }
 
+  const selectedTone = COVER_LETTER_TONES[tone];
+
   return (
     <div>
+      {/* Tone selector */}
+      <div className={styles.toneSection}>
+        <div className="card-label" style={{ marginBottom: 12 }}>Cover Letter Style</div>
+        <div className={styles.toneGrid}>
+          {Object.entries(COVER_LETTER_TONES).map(([key, cfg]) => (
+            <button
+              key={key}
+              className={`${styles.toneCard} ${tone === key ? styles.toneActive : ''}`}
+              onClick={() => { setTone(key); setLetter(''); }}
+            >
+              <span className={styles.toneEmoji}>{cfg.emoji}</span>
+              <span className={styles.toneLabel}>{cfg.label}</span>
+              <span className={styles.toneDesc}>{cfg.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Inputs */}
       <div className="grid-2">
         <div className="card">
           <div className="card-label">
@@ -70,7 +91,7 @@ export default function CoverLetter({ onToast }) {
       <div className="btn-row">
         <button className="btn-primary" onClick={handleGenerate} disabled={loading}>
           {loading && <span className="spinner" />}
-          <span>{loading ? 'Generating…' : 'Generate Cover Letter'}</span>
+          <span>{loading ? 'Generating…' : `Generate ${selectedTone.emoji} ${selectedTone.label} Letter`}</span>
         </button>
       </div>
 
@@ -85,12 +106,16 @@ export default function CoverLetter({ onToast }) {
         <div className={styles.results}>
           <div className={styles.resultsHeader}>
             <h2 className={styles.resultsTitle}>Cover Letter</h2>
+            <span className={styles.tonePill}>{selectedTone.emoji} {selectedTone.label}</span>
             <span className="badge badge-green">Ready to send</span>
           </div>
           <div className={styles.letterOutput}>{letter}</div>
-          <button className="btn-secondary" onClick={handleCopy} style={{ marginTop: 12 }}>
-            ⎘ Copy to clipboard
-          </button>
+          <div className={styles.letterActions}>
+            <button className="btn-secondary" onClick={handleCopy}>⎘ Copy to clipboard</button>
+            <button className="btn-secondary" onClick={() => { setLetter(''); setTone('conversational'); }}>
+              ↺ Generate different style
+            </button>
+          </div>
         </div>
       )}
     </div>
