@@ -306,3 +306,20 @@
 .tipBanner a { color: var(--accent); text-decoration: none; font-weight: 600; }
 .tipBanner a:hover { text-decoration: underline; }
 .tipBanner code { font-family: var(--font-mono); background: var(--surface2); padding: 1px 5px; border-radius: 3px; font-size: 12px; }
+
+.keywordHint {
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 16px;
+}
+.keywordHint em { color: var(--accent); font-style: normal; }
+
+.noResults {
+  text-align: center;
+  margin-top: 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+.noResults p { color: var(--muted); font-size: 14px; }

@@ -101,3 +101,48 @@ export function saveResume(text) {
 export function clearResume() {
   localStorage.removeItem(RESUME_KEY);
 }
+
+// ─── Resume Version Manager ───────────────────────────────────────────────────
+
+const RESUME_VERSIONS_KEY = 'jobtailor_resume_versions';
+const ACTIVE_RESUME_KEY   = 'jobtailor_active_resume_id';
+
+export function getResumeVersions() {
+  try { return JSON.parse(localStorage.getItem(RESUME_VERSIONS_KEY) || '[]'); }
+  catch { return []; }
+}
+
+export function saveResumeVersion({ id, name, content }) {
+  const versions = getResumeVersions();
+  const existing = versions.findIndex((v) => v.id === id);
+  const version  = { id: id || crypto.randomUUID(), name, content, updatedAt: new Date().toISOString() };
+  if (existing >= 0) { versions[existing] = version; }
+  else { versions.unshift(version); }
+  localStorage.setItem(RESUME_VERSIONS_KEY, JSON.stringify(versions));
+  return version;
+}
+
+export function deleteResumeVersion(id) {
+  const versions = getResumeVersions().filter((v) => v.id !== id);
+  localStorage.setItem(RESUME_VERSIONS_KEY, JSON.stringify(versions));
+  if (getActiveResumeId() === id) clearActiveResume();
+}
+
+export function getActiveResumeId() {
+  return localStorage.getItem(ACTIVE_RESUME_KEY) || null;
+}
+
+export function setActiveResume(id) {
+  localStorage.setItem(ACTIVE_RESUME_KEY, id);
+}
+
+export function clearActiveResume() {
+  localStorage.removeItem(ACTIVE_RESUME_KEY);
+}
+
+export function getActiveResumeContent() {
+  const id = getActiveResumeId();
+  if (!id) return getSavedResume(); // fall back to single saved resume
+  const version = getResumeVersions().find((v) => v.id === id);
+  return version?.content || getSavedResume();
+}
