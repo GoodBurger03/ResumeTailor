@@ -12,21 +12,29 @@ async function callClaude(systemPrompt, userMessage, maxTokens = 1000) {
     );
   }
 
-  const response = await fetch(API_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type':    'application/json',
-      'x-api-key':       apiKey,
-      'anthropic-version': '2023-06-01',
-      'anthropic-dangerous-direct-browser-access': 'true',
-    },
-    body: JSON.stringify({
-      model:      MODEL,
-      max_tokens: maxTokens,
-      system:     systemPrompt,
-      messages:   [{ role: 'user', content: userMessage }],
-    }),
-  });
+  let response;
+  try {
+    response = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type':    'application/json',
+        'x-api-key':       apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true',
+      },
+      body: JSON.stringify({
+        model:      MODEL,
+        max_tokens: maxTokens,
+        system:     systemPrompt,
+        messages:   [{ role: 'user', content: userMessage }],
+      }),
+    });
+  } catch (error) {
+    if (error instanceof TypeError) {
+      throw new Error('Request setup failed. Re-save your API key in Settings and try again.');
+    }
+    throw error;
+  }
 
   if (!response.ok) {
     const err = await response.json().catch(() => ({}));

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { tailorResume } from '../services/analysis.js';
 import { exportToPDF, exportToDOCX } from '../services/export.js';
-import { getSavedResume, saveResume, clearResume } from '../services/storage.js';
+import { getSavedResume, saveResume, clearResume, getActiveResumeContent } from '../services/storage.js';
 import ScoreRing from './ScoreRing.jsx';
 import styles from './ResumeTailor.module.css';
 
@@ -48,7 +48,7 @@ export default function ResumeTailor({ onToast, prefillJD }) {
 
   // Load saved resume on mount
   useEffect(() => {
-    const saved = getSavedResume();
+    const saved = getActiveResumeContent();
     if (saved) {
       setResume(saved);
       setResumeSaved(true);
