@@ -1,14 +1,12 @@
 .scenarioGrid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px; margin-bottom: 20px;
 }
 
 .scenarioCard {
   background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius-md); padding: 14px;
-  cursor: pointer; text-align: left;
-  display: flex; flex-direction: column; gap: 4px;
+  border-radius: var(--radius-md); padding: 14px; cursor: pointer;
+  text-align: left; display: flex; flex-direction: column; gap: 4px;
   transition: all 0.2s; font-family: var(--font-ui);
 }
 .scenarioCard:hover { border-color: rgba(232,255,71,0.4); transform: translateY(-1px); }
@@ -18,20 +16,40 @@
 .scenarioLabel { font-size: 14px; font-weight: 700; color: var(--text); }
 .scenarioDesc  { font-size: 12px; color: var(--muted); line-height: 1.4; }
 
-.contextHint { font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+/* Structured fields */
+.fieldsGrid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.field     { display: flex; flex-direction: column; gap: 5px; }
+.fieldFull { display: flex; flex-direction: column; gap: 5px; grid-column: 1 / -1; }
+
+.fieldLabel {
+  font-size: 11px; font-weight: 700; letter-spacing: 0.06em;
+  text-transform: uppercase; color: var(--muted);
+}
+
+.fieldInput {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font-ui); font-size: 14px; padding: 9px 12px;
+  outline: none; transition: border-color 0.2s; width: 100%;
+}
+.fieldInput:focus { border-color: var(--accent); }
+.fieldInput::placeholder { color: var(--muted); }
+
+.fieldTextarea {
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font-ui); font-size: 14px; padding: 9px 12px;
+  resize: vertical; outline: none; transition: border-color 0.2s; width: 100%;
+}
+.fieldTextarea:focus { border-color: var(--accent); }
+.fieldTextarea::placeholder { color: var(--muted); }
 
 .error { color: var(--danger); font-size: 14px; margin-bottom: 12px; }
 
 .results { animation: fadeSlideUp 0.3s ease; }
 
-.resultsHeader {
-  display: flex; align-items: center; gap: 10px;
-  margin-bottom: 14px; flex-wrap: wrap;
-}
-
-.resultsTitle {
-  font-family: var(--font-display); font-style: italic; font-size: 22px;
-}
+.resultsHeader { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; flex-wrap: wrap; }
+.resultsTitle  { font-family: var(--font-display); font-style: italic; font-size: 22px; }
 
 .scenarioPill {
   font-size: 12px; font-weight: 700;
@@ -42,16 +60,17 @@
 .emailOutput {
   background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--radius-md); padding: 24px;
-  font-size: 14px; line-height: 1.8;
-  white-space: pre-wrap; font-family: var(--font-mono);
-  min-height: 100px;
+  font-size: 14px; line-height: 1.8; white-space: pre-wrap;
+  font-family: var(--font-mono); min-height: 100px;
 }
 
-.emailActions {
-  display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap;
+.emailEditable {
+  width: 100%; background: var(--surface2); border: 1px solid var(--accent);
+  border-radius: var(--radius-md); color: var(--text);
+  font-family: var(--font-mono); font-size: 14px; line-height: 1.8;
+  padding: 20px; resize: vertical; outline: none;
+  min-height: 220px;
 }
 
-.tip {
-  font-size: 12px; color: var(--warn);
-  margin-top: 10px; font-style: italic;
-}
+.emailActions { display: flex; gap: 10px; margin-top: 12px; flex-wrap: wrap; }
+.tip { font-size: 12px; color: var(--warn); margin-top: 10px; font-style: italic; }

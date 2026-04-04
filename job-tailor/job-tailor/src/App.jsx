@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import Header from './components/Header.jsx';
-import Tabs from './components/Tabs.jsx';
+import Sidebar from './components/Sidebar.jsx';
 import ResumeTailor from './components/ResumeTailor.jsx';
 import CoverLetter from './components/CoverLetter.jsx';
 import JobBoard from './components/JobBoard.jsx';
@@ -14,23 +13,23 @@ import ResumeManager from './components/ResumeManager.jsx';
 import { hasRequiredKeys } from './services/settings.js';
 import styles from './App.module.css';
 
-const TABS = [
-  { id: 'jobs',      label: '⊞ Job Board'      },
-  { id: 'tailor',    label: '✦ Resume Tailor'   },
-  { id: 'cover',     label: '✉ Cover Letter'    },
-  { id: 'interview', label: '🎯 Interview Prep' },
-  { id: 'email',     label: '📨 Email Drafter'  },
-  { id: 'salary',    label: '💰 Salary'         },
-  { id: 'resumes',   label: '📁 My Resumes'     },
-  { id: 'tracker',   label: '◎ Tracker'         },
-  { id: 'dash',      label: '▲ Dashboard'       },
-  { id: 'settings',  label: '⚙ Settings'        },
-];
+const TAB_TITLES = {
+  jobs:      'Job Board',
+  tailor:    'Resume Tailor',
+  cover:     'Cover Letter',
+  interview: 'Interview Prep',
+  email:     'Email Drafter',
+  salary:    'Salary Insights',
+  resumes:   'My Resumes',
+  tracker:   'Application Tracker',
+  dash:      'Dashboard',
+  settings:  'Settings',
+};
 
 export default function App() {
-  const [activeTab, setActiveTab]       = useState('jobs');
-  const [toast, setToast]               = useState({ visible: false, message: '' });
-  const [prefillJD, setPrefillJD]       = useState(null);
+  const [activeTab, setActiveTab]         = useState('jobs');
+  const [toast, setToast]                 = useState({ visible: false, message: '' });
+  const [prefillJD, setPrefillJD]         = useState(null);
   const [showKeyPrompt, setShowKeyPrompt] = useState(false);
 
   useEffect(() => {
@@ -47,42 +46,46 @@ export default function App() {
     setActiveTab('tailor');
   }
 
-  return (
-    <>
-      <div className="app">
-        <Header />
+  function goToSettings() {
+    setShowKeyPrompt(false);
+    setActiveTab('settings');
+  }
 
+  return (
+    <div className={styles.layout}>
+      <Sidebar active={activeTab} onChange={setActiveTab} />
+
+      <div className={styles.main}>
+        {/* Key prompt banner */}
         {showKeyPrompt && (
           <div className={styles.keyPrompt}>
-            <div className={styles.keyPromptInner}>
-              <span className={styles.keyPromptIcon}>🔑</span>
-              <div>
-                <strong>Add your Anthropic API key to get started.</strong>
-                <span> The Resume Tailor, Cover Letter, Interview Prep, and other AI features need it.</span>
-              </div>
-              <button className={styles.keyPromptBtn} onClick={() => { setShowKeyPrompt(false); setActiveTab('settings'); }}>
-                Go to Settings →
-              </button>
-              <button className={styles.keyPromptDismiss} onClick={() => setShowKeyPrompt(false)}>✕</button>
-            </div>
+            <span>🔑 <strong>Add your Anthropic API key</strong> to unlock AI features.</span>
+            <button className={styles.keyPromptBtn} onClick={goToSettings}>Go to Settings →</button>
+            <button className={styles.keyPromptDismiss} onClick={() => setShowKeyPrompt(false)}>✕</button>
           </div>
         )}
 
-        <Tabs tabs={TABS} active={activeTab} onChange={setActiveTab} />
+        {/* Page header */}
+        <div className={styles.pageHeader}>
+          <h1 className={styles.pageTitle}>{TAB_TITLES[activeTab]}</h1>
+        </div>
 
-        {activeTab === 'jobs'      && <JobBoard      onTailorJob={handleTailorJob} onToast={showToast} />}
-        {activeTab === 'tailor'    && <ResumeTailor  onToast={showToast} prefillJD={prefillJD} />}
-        {activeTab === 'cover'     && <CoverLetter   onToast={showToast} />}
-        {activeTab === 'interview' && <InterviewPrep onToast={showToast} />}
-        {activeTab === 'email'     && <EmailDrafter  onToast={showToast} />}
-        {activeTab === 'salary'    && <SalaryInsights onToast={showToast} />}
-        {activeTab === 'resumes'   && <ResumeManager  onToast={showToast} />}
-        {activeTab === 'tracker'   && <AppTracker    onToast={showToast} />}
-        {activeTab === 'dash'      && <Dashboard />}
-        {activeTab === 'settings'  && <Settings      onToast={showToast} />}
+        {/* Content */}
+        <div className={styles.content}>
+          {activeTab === 'jobs'      && <JobBoard      onTailorJob={handleTailorJob} onToast={showToast} />}
+          {activeTab === 'tailor'    && <ResumeTailor  onToast={showToast} prefillJD={prefillJD} />}
+          {activeTab === 'cover'     && <CoverLetter   onToast={showToast} />}
+          {activeTab === 'interview' && <InterviewPrep onToast={showToast} />}
+          {activeTab === 'email'     && <EmailDrafter  onToast={showToast} />}
+          {activeTab === 'salary'    && <SalaryInsights onToast={showToast} />}
+          {activeTab === 'resumes'   && <ResumeManager  onToast={showToast} />}
+          {activeTab === 'tracker'   && <AppTracker    onToast={showToast} />}
+          {activeTab === 'dash'      && <Dashboard />}
+          {activeTab === 'settings'  && <Settings      onToast={showToast} />}
+        </div>
       </div>
 
       <div className={`toast ${toast.visible ? 'show' : ''}`}>{toast.message}</div>
-    </>
+    </div>
   );
 }

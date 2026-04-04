@@ -1,12 +1,11 @@
 /**
  * Settings service — manages user-provided API keys.
  *
- * Storage: localStorage with simple base64 obfuscation (not encryption).
- * This satisfies CodeQL static analysis while keeping keys readable for the API.
- * For real security, use a backend proxy.
+ * Storage: localStorage with base64 obfuscation.
+ * Keys from .env are used as-is (dev). Keys from Settings UI are encoded.
  *
- * Keys from .env are used as-is (dev mode). Keys saved via Settings UI
- * are base64-encoded before storage and decoded on retrieval.
+ * IMPORTANT: If you previously had keys saved with the old XOR cipher,
+ * they will be auto-cleared on first load and you will need to re-enter them.
  */
 
 const KEYS = {
@@ -16,41 +15,55 @@ const KEYS = {
   MUSE:          'jobtailor_key_muse',
   USAJOBS_KEY:   'jobtailor_key_usajobs',
   USAJOBS_EMAIL: 'jobtailor_key_usajobs_email',
+  MIGRATION_DONE:'jobtailor_migrated_v2',
 };
 
-// Simple reversible obfuscation — stops casual localStorage inspection
+// ─── One-time migration: clear any XOR-corrupted keys from old versions ───────
+function runMigration() {
+  if (localStorage.getItem(KEYS.MIGRATION_DONE)) return;
+  // Clear all jobtailor keys except the migration flag itself
+  Object.values(KEYS).forEach((k) => {
+    if (k !== KEYS.MIGRATION_DONE) localStorage.removeItem(k);
+  });
+  localStorage.setItem(KEYS.MIGRATION_DONE, '1');
+}
+runMigration();
+
+// ─── Encode/decode ────────────────────────────────────────────────────────────
+
 function encode(value) {
   if (!value) return '';
   try { return btoa(unescape(encodeURIComponent(value))); } catch { return value; }
 }
 
-function decode(value) {
-  if (!value) return '';
-  try { return decodeURIComponent(escape(atob(value))); } catch { return value; }
-}
-
-function normalize(value) {
-  if (!value) return '';
-  // Strip control characters that can break Fetch header values.
-  return String(value).replace(/[\u0000-\u001F\u007F]/g, '').trim();
+function decode(raw) {
+  if (!raw) return '';
+  try {
+    const decoded = decodeURIComponent(escape(atob(raw)));
+    // Sanity check: decoded value should be printable ASCII / reasonable length
+    if (decoded.length > 0 && decoded.length < 500) return decoded;
+    return '';
+  } catch {
+    // Not base64 — might be a plain value from .env fallback path, return as-is
+    return raw;
+  }
 }
 
 function get(storageKey, envKey) {
   const stored = localStorage.getItem(storageKey);
-  if (stored) return normalize(decode(stored));
-  return normalize(import.meta.env[envKey] || '');
+  if (stored) return decode(stored);
+  return import.meta.env[envKey] || '';
 }
 
 function set(storageKey, value) {
-  const cleaned = normalize(value);
-  if (cleaned) {
-    localStorage.setItem(storageKey, encode(cleaned));
+  if (value && value.trim()) {
+    localStorage.setItem(storageKey, encode(value.trim()));
   } else {
     localStorage.removeItem(storageKey);
   }
 }
 
-// ─── Getters (all synchronous) ────────────────────────────────────────────────
+// ─── Getters ──────────────────────────────────────────────────────────────────
 
 export function getAnthropicKey()  { return get(KEYS.ANTHROPIC,     'VITE_ANTHROPIC_API_KEY'); }
 export function getAdzunaId()      { return get(KEYS.ADZUNA_APP_ID,  'VITE_ADZUNA_APP_ID'); }

@@ -1,0 +1,116 @@
+.sidebar {
+  width: 220px;
+  min-width: 220px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  display: flex;
+  flex-direction: column;
+  padding: 24px 12px;
+  height: 100vh;
+  position: sticky;
+  top: 0;
+  overflow-y: auto;
+}
+
+/* Logo */
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 8px;
+  margin-bottom: 32px;
+}
+
+.logoMark {
+  width: 34px;
+  height: 34px;
+  background: var(--accent);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: #000;
+  flex-shrink: 0;
+}
+
+.logoText {
+  font-family: var(--font-display);
+  font-size: 20px;
+  letter-spacing: -0.3px;
+}
+.logoText span { color: var(--accent); }
+
+/* Nav */
+.nav { display: flex; flex-direction: column; gap: 4px; flex: 1; }
+
+.group { margin-bottom: 8px; }
+
+.groupLabel {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+  padding: 4px 10px 6px;
+  opacity: 0.6;
+}
+
+.navItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 10px;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--muted);
+  font-family: var(--font-ui);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: left;
+}
+
+.navItem:hover { background: var(--surface2); color: var(--text); }
+
+.navItem.active {
+  background: rgba(232,255,71,0.12);
+  color: var(--accent);
+}
+
+.icon {
+  font-size: 15px;
+  width: 20px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.label { flex: 1; }
+
+/* Mobile — collapse to top bar */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    height: auto;
+    position: relative;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    padding: 8px 12px;
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    gap: 0;
+  }
+
+  .logo { display: none; }
+  .nav { flex-direction: row; gap: 2px; flex-wrap: nowrap; flex: 1; }
+  .group { display: flex; flex-direction: row; margin-bottom: 0; }
+  .groupLabel { display: none; }
+  .navItem { padding: 7px 10px; font-size: 12px; white-space: nowrap; }
+  .icon { font-size: 13px; width: 16px; }
+}

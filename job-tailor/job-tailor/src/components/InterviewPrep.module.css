@@ -117,3 +117,29 @@ ul { list-style: none; display: flex; flex-direction: column; gap: 6px; }
   font-size: 13px; color: var(--muted);
   margin-top: 16px; text-align: center;
 }
+
+.qRight { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.practicedBtn {
+  font-family: var(--font-ui); font-size: 11px; font-weight: 700;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 20px; color: var(--muted);
+  padding: 3px 10px; cursor: pointer; transition: all 0.2s; white-space: nowrap;
+}
+.practicedBtn:hover { border-color: var(--success); color: var(--success); }
+.practicedActive { background: rgba(74,222,128,0.12) !important; color: var(--success) !important; border-color: var(--success) !important; }
+
+.qPracticed { opacity: 0.65; }
+.qPracticed .qText { text-decoration: line-through; }
+
+.noteSection { margin-top: 12px; }
+.noteTrigger { cursor: pointer; padding: 6px 0; }
+.noteText { font-size: 13px; color: var(--muted); font-family: var(--font-mono); line-height: 1.4; white-space: pre-wrap; }
+.notePlaceholder { font-size: 13px; color: var(--border); }
+.noteInput {
+  width: 100%; background: var(--surface2); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text);
+  font-family: var(--font-mono); font-size: 13px; padding: 8px 12px;
+  resize: vertical; outline: none; transition: border-color 0.2s;
+}
+.noteInput:focus { border-color: var(--accent); }
