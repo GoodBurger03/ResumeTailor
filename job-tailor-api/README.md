@@ -1,6 +1,6 @@
 # job-tailor-api
 
-Azure Functions backend for [JobTailor](https://github.com/GoodBurger03/job-tailor).
+Azure Functions backend for [JobTailor](https://github.com/GoodBurger03/JobTailor).
 Proxies all external API calls server-side — no CORS issues, no API keys in the browser.
 
 ## Architecture
@@ -29,21 +29,20 @@ Azure Functions (this repo)
 ## Local Development
 
 ### Prerequisites
-- Node.js 18+
+- Node.js 20+
 - [Azure Functions Core Tools v4](https://learn.microsoft.com/en-us/azure/azure-functions/functions-run-local)
-  ```bash
+  ```powershell
   npm install -g azure-functions-core-tools@4 --unsafe-perm true
   ```
 
 ### Setup
 
-```bash
-git clone https://github.com/GoodBurger03/job-tailor-api.git
+```powershell
 cd job-tailor-api
 npm install
 
 # Copy settings and add your API keys
-cp local.settings.json.example local.settings.json
+Copy-Item local.settings.json.example local.settings.json
 # Edit local.settings.json with your keys
 
 # Start the functions locally
@@ -53,8 +52,8 @@ func start
 Functions will be available at `http://localhost:7071/api/`.
 
 ### Test the health endpoint
-```bash
-curl http://localhost:7071/api/health
+```powershell
+curl -UseBasicParsing http://localhost:7071/api/health
 ```
 
 Expected response:
@@ -86,47 +85,26 @@ winget install Microsoft.AzureCLI
 ```
 
 ### 3. Login and create resources
-```bash
+```powershell
 az login
 
 # Create resource group
 az group create --name job-tailor-rg --location eastus
 
 # Create storage account (required for Functions)
-az storage account create \
-  --name jobtailorstorage \
-  --location eastus \
-  --resource-group job-tailor-rg \
-  --sku Standard_LRS
+az storage account create --name jobtailorstorage --location eastus --resource-group job-tailor-rg --sku Standard_LRS
 
-# Create the Function App
-az functionapp create \
-  --resource-group job-tailor-rg \
-  --consumption-plan-location eastus \
-  --runtime node \
-  --runtime-version 18 \
-  --functions-version 4 \
-  --name job-tailor-api \
-  --storage-account jobtailorstorage
+# Create Function App
+az functionapp create --resource-group job-tailor-rg --consumption-plan-location eastus --runtime node --runtime-version 22 --functions-version 4 --name job-tailor-api --storage-account jobtailorstorage
 ```
 
 ### 4. Set environment variables on Azure
-```bash
-az functionapp config appsettings set \
-  --name job-tailor-api \
-  --resource-group job-tailor-rg \
-  --settings \
-    ANTHROPIC_API_KEY="your_key" \
-    ADZUNA_APP_ID="your_id" \
-    ADZUNA_APP_KEY="your_key" \
-    MUSE_API_KEY="your_key" \
-    USAJOBS_API_KEY="your_key" \
-    USAJOBS_USER_AGENT="your@email.com" \
-    ALLOWED_ORIGIN="https://your-frontend-url.com"
+```powershell
+az functionapp config appsettings set --name job-tailor-api --resource-group job-tailor-rg --settings ANTHROPIC_API_KEY="your_key" ADZUNA_APP_ID="your_id" ADZUNA_APP_KEY="your_key" MUSE_API_KEY="your_key" USAJOBS_API_KEY="your_key" USAJOBS_USER_AGENT="your@email.com" ALLOWED_ORIGIN="https://your-frontend-url.com" RATE_LIMIT_PER_MINUTE="30"
 ```
 
 ### 5. Deploy
-```bash
+```powershell
 func azure functionapp publish job-tailor-api
 ```
 
@@ -159,8 +137,17 @@ Cache is per-location. Pass `?refresh=true` to force a fresh fetch.
 
 ## Tech Stack
 
-- **Runtime**: Node.js 18
+- **Runtime**: Node.js 20+
 - **Framework**: Azure Functions v4
 - **HTTP client**: Axios
 - **Caching**: node-cache (in-memory)
 - **Deployment**: Azure App Service (Consumption plan)
+
+## Monorepo Note
+
+This API lives in the same repository as the frontend.
+
+- Frontend path: `job-tailor/job-tailor`
+- API path: `job-tailor-api`
+
+For CI/CD, deploy only the `job-tailor-api` path to the Function App.

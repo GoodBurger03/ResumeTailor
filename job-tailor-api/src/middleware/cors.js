@@ -10,7 +10,8 @@ const rateLimitCache = new NodeCache({ stdTTL: 60 });
 
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGIN || 'http://localhost:5173')
   .split(',')
-  .map((o) => o.trim());
+  .map((o) => o.trim())
+  .filter(Boolean);
 
 const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_PER_MINUTE || '30');
 
@@ -18,9 +19,10 @@ const RATE_LIMIT = parseInt(process.env.RATE_LIMIT_PER_MINUTE || '30');
  * Returns CORS headers for a given request origin.
  */
 export function getCorsHeaders(requestOrigin) {
+  const fallbackOrigin = ALLOWED_ORIGINS[0] || 'http://localhost:5173';
   const origin = ALLOWED_ORIGINS.includes(requestOrigin)
     ? requestOrigin
-    : ALLOWED_ORIGINS[0];
+    : fallbackOrigin;
 
   return {
     'Access-Control-Allow-Origin':  origin,
@@ -34,11 +36,11 @@ export function getCorsHeaders(requestOrigin) {
  * Handle OPTIONS preflight requests.
  */
 export function handlePreflight(request) {
-  if (request.method === 'OPTIONS') {
+  if (request?.method?.toUpperCase() === 'OPTIONS') {
+    const origin = request?.headers?.get?.('origin') || '';
     return {
       status: 204,
-      headers: getCorsHeaders(request.headers.get('origin') || ''),
-      body: '',
+      headers: getCorsHeaders(origin),
     };
   }
   return null;
