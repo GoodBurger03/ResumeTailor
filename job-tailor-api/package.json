@@ -2,6 +2,7 @@
   "name": "job-tailor-api",
   "version": "1.0.0",
   "description": "Azure Functions backend for JobTailor — proxies job APIs and Anthropic",
+  "type": "module",
   "main": "src/index.js",
   "scripts": {
     "start": "func start",

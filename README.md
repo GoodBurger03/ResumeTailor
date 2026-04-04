@@ -1,126 +1,148 @@
 # JobTailor
 
-AI-powered job search platform with resume tailoring, cover letter generation, job aggregation, and application tracking. Built for job seekers who want to optimize their applications and stay organized.
+JobTailor is a full-stack job search platform with a React frontend and an Azure Functions API backend.
 
----
+## Current Repository Layout
+
+```text
+ResumeTailor/
+├── .github/
+├── job-tailor/
+│   └── job-tailor/                 # Frontend (React + Vite)
+│       ├── .env
+│       ├── .env.example
+│       ├── package.json
+│       └── src/
+└── job-tailor-api/                 # Backend (Azure Functions)
+    ├── local.settings.json.example
+    ├── package.json
+    └── src/
+```
 
 ## Features
 
-- **✦ Resume Tailor** — Paste a job description and your resume. Get a match score (0–100), identify skill gaps, receive 5 AI-optimized resume bullets tailored to the role, and 3 actionable recommendations
-- **✉ Cover Letter Generator** — Creates natural, compelling cover letters in seconds with one-click copy
-- **⊞ Job Board** — Aggregates job listings from multiple sources: Adzuna (broad US), The Muse (tech/startup), USAJobs (federal), and RemoteOK (remote tech)
-- **◎ Application Tracker** — Log and track every application with status updates, notes, and follow-ups
-- **▲ Dashboard** — Visual analytics of your job search progress, application pipeline, and success metrics
-- **⚙ Settings** — Manage API keys for all integrated services with local storage
-- **📄 Export** — Download tailored resumes and cover letters as PDF or DOCX
+- Resume tailoring with AI scoring and bullet rewrites.
+- Cover letter generation.
+- Job aggregation from Adzuna, The Muse, USAJobs, and RemoteOK.
+- Application tracking and dashboard views.
 
----
+## Architecture
 
-## Tech Stack
-
-- React 18 + Vite
-- CSS Modules with custom design system
-- Anthropic Claude API for AI-powered content generation
-- Multiple job board APIs (Adzuna, The Muse, USAJobs, RemoteOK)
-- Local storage for data persistence
-- PDF/DOCX export capabilities
-
----
-
-## Getting Started
-
-### 1. Clone and install
-
-```bash
-git clone https://github.com/GoodBurger03/JobTailor.git
-cd ResumeTailor/job-tailor/job-tailor
-npm install --legacy-peer-deps
+```text
+Frontend (Vite, localhost:5173 or deployed static site)
+    |
+    v
+Backend API (Azure Functions, /api/*)
+    |
+    v
+External providers (Anthropic, Adzuna, Muse, USAJobs, RemoteOK)
 ```
 
-### 2. Configure API keys
+## Local Setup (Recommended)
 
-**For security, API keys are entered through the app's Settings UI (not in .env files).**
+### 1. Prerequisites
 
-```bash
-cp .env.example .env
+- Node.js 20+
+- npm
+- Azure Functions Core Tools v4
+
+Install Functions Core Tools (Windows):
+
+```powershell
+npm install -g azure-functions-core-tools@4 --unsafe-perm true
 ```
 
-Open `.env` and set:
+### 2. Install dependencies
 
+```powershell
+cd job-tailor\job-tailor
+npm install
+
+cd ..\..\job-tailor-api
+npm install
 ```
-VITE_ANTHROPIC_API_KEY=your_key_here
-VITE_STORAGE_ENCRYPTION_SECRET=a_big_secret_string_for_local_storage_encryption
+
+### 3. Configure backend secrets
+
+Copy backend settings file:
+
+```powershell
+cd job-tailor-api
+Copy-Item local.settings.json.example local.settings.json
 ```
 
-**About VITE_STORAGE_ENCRYPTION_SECRET:**
-This optional secret enables encryption of API keys stored in your browser's localStorage. When set, API keys entered through the Settings UI are obfuscated using XOR cipher + Base64 encoding. This protects against casual inspection via browser developer tools. Generate a long, random string (32+ characters) for best security.
+Open `job-tailor-api/local.settings.json` and set real values for:
 
-**API Keys (enter these in the ⚙ Settings UI):**
-- **Anthropic** (Required): [console.anthropic.com](https://console.anthropic.com) — Powers resume tailoring and cover letter generation
-- **Adzuna** (Optional): [developer.adzuna.com](https://developer.adzuna.com) — Broad US job listings (250 req/month free)
-- **The Muse** (Optional): [themuse.com/developers](https://www.themuse.com/developers/api/v2) — Tech and startup jobs (free)
-- **USAJobs** (Optional): [developer.usajobs.gov](https://developer.usajobs.gov) — Federal government jobs (free, ~1 day approval)
+- `ANTHROPIC_API_KEY`
+- `ADZUNA_APP_ID`
+- `ADZUNA_APP_KEY`
+- `MUSE_API_KEY`
+- `USAJOBS_API_KEY`
+- `USAJOBS_USER_AGENT`
+- `ALLOWED_ORIGIN` (for local: `http://localhost:5173`)
 
-> **Security Note:** API keys entered through the ⚙ Settings UI are encrypted in browser localStorage. The `.env` file is only used for development fallbacks and should not contain production API keys.
+### 4. Configure frontend
 
-### 3. Run
+Open `job-tailor/job-tailor/.env` and set:
 
-```bash
+```env
+VITE_API_URL=http://localhost:7071/api
+```
+
+When `VITE_API_URL` is set, the frontend sends all provider calls through the backend.
+
+### 5. Run both apps
+
+Terminal 1:
+
+```powershell
+cd job-tailor-api
+func start
+```
+
+Terminal 2:
+
+```powershell
+cd job-tailor\job-tailor
 npm run dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
+Frontend: `http://localhost:5173`
 
-### 4. Configure API keys in the app
+Backend health check:
 
-1. Click the ⚙ Settings tab
-2. Enter your API keys in the secure input fields
-3. Click "Save Settings"
-4. Keys are encrypted and stored locally in your browser
-
----
-
-## Project Structure
-
-```
-job-tailor/
-├── index.html
-├── vite.config.js
-├── package.json
-├── .env.example
-├── .gitignore
-└── src/
-    ├── main.jsx                    # React entry point
-    ├── App.jsx                     # Root component, tab navigation, toast notifications
-    ├── services/
-    │   ├── claude.js               # Anthropic API wrapper
-    │   ├── analysis.js             # Resume tailoring + cover letter generation
-    │   ├── jobFeed.js              # Job aggregation from multiple APIs
-    │   ├── settings.js             # API key management (localStorage + .env)
-    │   ├── storage.js              # Local storage utilities
-    │   └── export.js               # PDF/DOCX export functionality
-    ├── styles/
-    │   ├── globals.css             # Design tokens, reset, keyframes
-    │   └── components.css          # Shared utility classes
-    └── components/
-        ├── Header.jsx / .module.css
-        ├── Tabs.jsx / .module.css
-        ├── JobBoard.jsx / .module.css
-        ├── ResumeTailor.jsx / .module.css
-        ├── CoverLetter.jsx / .module.css
-        ├── AppTracker.jsx / .module.css
-        ├── Dashboard.jsx / .module.css
-        ├── Settings.jsx / .module.css
-        └── ScoreRing.jsx / .module.css
+```powershell
+curl -UseBasicParsing http://localhost:7071/api/health
 ```
 
----
+## Production Deployment
 
-## Build for production
+### Backend (Azure Functions)
 
-```bash
-npm run build
+Deploy `job-tailor-api` to Azure Functions.
+
+- Add all secrets as Function App environment variables.
+- Set `ALLOWED_ORIGIN` to your deployed frontend URL.
+
+### Frontend (Static Host)
+
+Deploy `job-tailor/job-tailor` to a static host (Vercel, Netlify, Azure Static Web Apps, etc).
+
+Set build-time env:
+
+```env
+VITE_API_URL=https://<your-function-app>.azurewebsites.net/api
 ```
 
-Output goes to `dist/`. Deploy to Vercel, Netlify, or any static host.
-- Tone selector for cover letters
+## Security Notes
+
+- Do not commit `job-tailor-api/local.settings.json`.
+- Keep provider keys on the backend only for production.
+- Rotate exposed keys immediately if they are ever shared in logs, screenshots, or chat.
+
+## Useful Paths
+
+- Frontend app: `job-tailor/job-tailor`
+- Backend API: `job-tailor-api`
+- Backend jobs function: `job-tailor-api/src/functions/jobs.js`
+- Backend CORS middleware: `job-tailor-api/src/middleware/cors.js`
